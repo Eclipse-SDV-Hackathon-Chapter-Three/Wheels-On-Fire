@@ -30,7 +30,7 @@ workloads:
         # For Linux, use the host's IP address
         # - name: ADB_SERVER_HOST
         #   value: "172.17.0.1"
-      #command: ["--dir", "/app/provisioning", "--uninstall", "--workload-name", "apk_installer", "--wait", "60"]
+      command: ["--dir", "/app/provisioning", "--uninstall", "--workload-name", "apk_installer", "--wait", "60"]
   symphony:
     runtime: podman
     agent: "" 

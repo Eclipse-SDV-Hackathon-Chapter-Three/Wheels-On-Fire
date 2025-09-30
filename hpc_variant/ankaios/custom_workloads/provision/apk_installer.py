@@ -1,12 +1,60 @@
 #!/usr/bin/env python3
 
 import os
-import time
-import signal
+import subprocess
+import glob
 import logging
 import argparse
 import sys
+import time
 import json
+
+# Import Ankaios SDK
+try:
+    from ankaios_sdk import Ankaios, WorkloadStateEnum, AnkaiosException
+except ImportError:
+    # Mock implementation for development/testing without SDK
+    class WorkloadStateEnum:
+        RUNNING = "RUNNING"
+        FAILED = "FAILED"
+        PENDING = "PENDING"
+        SUCCEEDED = "SUCCEEDED"
+    
+    class AnkaiosException(Exception):
+        pass
+    
+    class Ankaios:
+        def __enter__(self):
+            return self
+        
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+        
+        def get_state(self, field_masks=None):
+            return MockState()
+        
+        def apply_workload(self, workload):
+            return MockResponse(["mock-instance-1"])
+        
+        def wait_for_workload_to_reach_state(self, instance_name, state, timeout):
+            time.sleep(2)  # Simulate waiting
+            return True
+            
+        def update_workload_state(self, workload_name, state):
+            print(f"Setting workload {workload_name} state to {state}")
+            return True
+    
+    class MockState:
+        def get_workload(self, name):
+            return MockWorkload()
+    
+    class MockWorkload:
+        def update_agent_name(self, agent_name):
+            pass
+    
+    class MockResponse:
+        def __init__(self, added_workloads):
+            self.added_workloads = added_workloads
 
 # Configure logging
 logging.basicConfig(
@@ -14,94 +62,284 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("/var/log/wait_for_signal.log")
+        logging.FileHandler("/var/log/apk_installer.log")
     ]
 )
-logger = logging.getLogger("signal-waiter")
+logger = logging.getLogger("apk-installer")
 
-# Global flag to indicate if we should proceed
-proceed_flag = False
-
-def signal_handler(sig, frame):
-    """Handle signals to wake up the process"""
-    global proceed_flag
-    if sig == signal.SIGUSR1:
-        logger.info("Received SIGUSR1 signal - proceeding with execution")
-        proceed_flag = True
-    elif sig == signal.SIGTERM:
-        logger.info("Received SIGTERM signal - exiting")
-        sys.exit(0)
-
-def wait_for_signal_file(signal_file_path, check_interval=5):
-    """Wait for a signal file to appear"""
-    logger.info(f"Waiting for signal file: {signal_file_path}")
-    while not os.path.exists(signal_file_path):
-        logger.debug(f"Signal file not found, checking again in {check_interval} seconds")
-        time.sleep(check_interval)
-    
-    logger.info(f"Signal file found: {signal_file_path}")
-    
-    # Read the signal file content
+def check_adb_available():
+    """Check if ADB is available in the system."""
     try:
-        with open(signal_file_path, 'r') as f:
-            content = f.read().strip()
-        logger.info(f"Signal file content: {content}")
-        return content
-    except Exception as e:
-        logger.error(f"Error reading signal file: {e}")
+        subprocess.run(["adb", "version"], check=True, capture_output=True, text=True)
+        return True
+    except (subprocess.SubprocessError, FileNotFoundError):
+        logger.error("ADB command not found. Please ensure Android SDK platform-tools are installed and in your PATH.")
+        return False
+
+def wait_for_adb_server(timeout=30):
+    """Wait for ADB server to be available."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            result = subprocess.run(
+                ["adb", "start-server"], 
+                check=False, 
+                capture_output=True, 
+                text=True
+            )
+            if "daemon started successfully" in result.stdout or "already running" in result.stderr:
+                logger.info("ADB server is running")
+                return True
+        except Exception as e:
+            logger.warning(f"Error starting ADB server: {e}")
+        
+        logger.info("Waiting for ADB server...")
+        time.sleep(2)
+    
+    logger.error("Timed out waiting for ADB server")
+    return False
+
+def get_connected_devices():
+    """Get list of connected Android devices."""
+    try:
+        result = subprocess.run(["adb", "devices"], check=True, capture_output=True, text=True)
+        lines = result.stdout.strip().split('\n')[1:]  # Skip the first line (header)
+        devices = []
+        
+        for line in lines:
+            if line.strip() and "\tdevice" in line:
+                devices.append(line.split('\t')[0])
+        
+        return devices
+    except subprocess.SubprocessError as e:
+        logger.error(f"Error getting device list: {e}")
+        return []
+
+def wait_for_device(timeout=60, device_id=None):
+    """Wait for an Android device to be connected."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        devices = get_connected_devices()
+        
+        if devices:
+            if device_id:
+                if device_id in devices:
+                    logger.info(f"Device {device_id} is connected")
+                    return device_id
+            else:
+                logger.info(f"Device {devices[0]} is connected")
+                return devices[0]
+        
+        logger.info("Waiting for device...")
+        time.sleep(2)
+    
+    logger.error("Timed out waiting for device")
+    return None
+
+def find_apk_files(directory):
+    """Find all APK files in the specified directory."""
+    if not os.path.isdir(directory):
+        logger.error(f"Directory not found: {directory}")
+        return []
+    
+    apk_files = glob.glob(os.path.join(directory, "*.apk"))
+    logger.info(f"Found {len(apk_files)} APK file(s) in {directory}")
+    return apk_files
+
+def install_apk(apk_path, device_id=None):
+    """Install APK on connected device."""
+    if not os.path.isfile(apk_path):
+        logger.error(f"APK file not found: {apk_path}")
+        return False, "APK file not found"
+    
+    try:
+        cmd = ["adb"]
+        if device_id:
+            cmd.extend(["-s", device_id])
+        
+        cmd.extend(["install", "-r", "-d", apk_path])
+        
+        logger.info(f"Installing APK: {apk_path}")
+        result = subprocess.run(cmd, check=False, capture_output=True, text=True)
+        
+        if result.returncode == 0 and "Success" in result.stdout:
+            logger.info(f"Successfully installed {apk_path}")
+            return True, "Installation successful"
+        else:
+            error_msg = result.stderr if result.stderr else result.stdout
+            logger.error(f"Installation failed: {error_msg}")
+            return False, f"Installation failed: {error_msg}"
+            
+    except subprocess.SubprocessError as e:
+        logger.error(f"Error installing APK: {e}")
+        return False, f"Error installing APK: {str(e)}"
+
+def uninstall_package(package_name, device_id=None):
+    """Uninstall package from device if it exists."""
+    if not package_name:
+        return False, "No package name provided"
+    
+    try:
+        cmd = ["adb"]
+        if device_id:
+            cmd.extend(["-s", device_id])
+        
+        cmd.extend(["uninstall", package_name])
+        
+        logger.info(f"Uninstalling package: {package_name}")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            logger.info(f"Successfully uninstalled {package_name}")
+            return True, "Uninstall successful"
+        else:
+            logger.warning(f"Failed to uninstall {package_name}: {result.stderr}")
+            return False, f"Uninstall failed: {result.stderr}"
+    except subprocess.SubprocessError as e:
+        logger.error(f"Error uninstalling package: {e}")
+        return False, f"Error uninstalling package: {str(e)}"
+
+def get_package_name(apk_path):
+    """Get package name from APK file using aapt."""
+    try:
+        result = subprocess.run(
+            ["aapt", "dump", "badging", apk_path], 
+            check=True, 
+            capture_output=True, 
+            text=True
+        )
+        
+        for line in result.stdout.split('\n'):
+            if line.startswith('package:'):
+                for item in line.split(' '):
+                    if item.startswith("name='"):
+                        return item.split("'")[1]
+        
+        return None
+    except (subprocess.SubprocessError, FileNotFoundError):
+        logger.warning(f"Could not determine package name for {apk_path}")
         return None
 
+def create_result_file(results, output_path="/var/log/installation_results.json"):
+    """Create a JSON file with installation results."""
+    try:
+        with open(output_path, 'w') as f:
+            json.dump(results, f, indent=2)
+        logger.info(f"Results written to {output_path}")
+        return True
+    except Exception as e:
+        logger.error(f"Error writing results: {e}")
+        return False
+
+def update_workload_state(workload_name, state):
+    """Update the state of this workload in Ankaios."""
+    try:
+        with Ankaios() as ankaios:
+            ankaios.update_workload_state(workload_name, state)
+            logger.info(f"Updated workload {workload_name} state to {state}")
+            return True
+    except Exception as e:
+        logger.error(f"Failed to update workload state: {e}")
+        return False
+
 def main():
-    parser = argparse.ArgumentParser(description="Wait for a signal before proceeding")
-    parser.add_argument("--signal-mode", choices=["file", "process"], default="file",
-                      help="Mode to wait for signal: file or process signal (default: file)")
-    parser.add_argument("--signal-file", default="/tmp/proceed_signal",
-                      help="Path to the signal file (default: /tmp/proceed_signal)")
-    parser.add_argument("--timeout", type=int, default=0,
-                      help="Timeout in seconds (0 for no timeout, default: 0)")
-    parser.add_argument("--task", default="echo 'Task executed'",
-                      help="Command to execute after receiving the signal (default: echo 'Task executed')")
+    parser = argparse.ArgumentParser(description="Install APK files from a directory using ADB")
+    parser.add_argument("--dir", "-d", default="/app/provisioning", help="Directory containing APK files (default: /app/provisioning)")
+    parser.add_argument("--device", "-s", help="Specific device ID to target (optional)")
+    parser.add_argument("--wait", "-w", type=int, default=60, help="Wait time in seconds for device (default: 60)")
+    parser.add_argument("--uninstall", "-u", action="store_true", help="Uninstall package before installation if possible")
+    parser.add_argument("--output", "-o", default="/var/log/installation_results.json", help="Output file for results (default: /var/log/installation_results.json)")
+    parser.add_argument("--workload-name", default="apk_installer", help="Name of this workload in Ankaios (default: apk_installer)")
     args = parser.parse_args()
     
     # Log script start
-    logger.info(f"Wait-for-signal started with arguments: {sys.argv[1:]}")
+    logger.info(f"APK Installer started with arguments: {sys.argv[1:]}")
+    logger.info(f"Looking for APKs in: {args.dir}")
     
-    # Register signal handlers if using process signals
-    if args.signal_mode == "process":
-        signal.signal(signal.SIGUSR1, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
+    # Check if ADB is available
+    if not check_adb_available():
+        update_workload_state(args.workload_name, WorkloadStateEnum.FAILED)
+        return 1
+    
+    # Wait for ADB server
+    if not wait_for_adb_server():
+        update_workload_state(args.workload_name, WorkloadStateEnum.FAILED)
+        return 1
+    
+    # Wait for device
+    device_id = wait_for_device(timeout=args.wait, device_id=args.device)
+    if not device_id:
+        update_workload_state(args.workload_name, WorkloadStateEnum.FAILED)
+        return 1
+    
+    # Find APK files
+    apk_files = find_apk_files(args.dir)
+    if not apk_files:
+        logger.error(f"No APK files found in directory: {args.dir}")
+        update_workload_state(args.workload_name, WorkloadStateEnum.FAILED)
+        return 1
+    
+    # Install each APK
+    results = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "device": device_id,
+        "total_apks": len(apk_files),
+        "installations": []
+    }
+    
+    success_count = 0
+    for apk_path in apk_files:
+        installation_result = {
+            "apk": os.path.basename(apk_path),
+            "path": apk_path,
+            "uninstall_result": None,
+            "install_result": None
+        }
         
-        logger.info(f"Waiting for SIGUSR1 signal (PID: {os.getpid()})")
-        logger.info(f"To send signal: kill -SIGUSR1 {os.getpid()}")
+        # Uninstall if requested
+        if args.uninstall:
+            package_name = get_package_name(apk_path)
+            if package_name:
+                uninstall_success, uninstall_message = uninstall_package(package_name, device_id)
+                installation_result["package_name"] = package_name
+                installation_result["uninstall_result"] = {
+                    "success": uninstall_success,
+                    "message": uninstall_message
+                }
         
-        # Wait for the signal or timeout
-        start_time = time.time()
-        while not proceed_flag:
-            time.sleep(1)
-            if args.timeout > 0 and time.time() - start_time > args.timeout:
-                logger.warning(f"Timeout after {args.timeout} seconds")
-                return 1
+        # Install the APK
+        install_success, install_message = install_apk(apk_path, device_id)
+        installation_result["install_result"] = {
+            "success": install_success,
+            "message": install_message
+        }
+        
+        if install_success:
+            success_count += 1
+        
+        results["installations"].append(installation_result)
+    
+    # Update summary
+    results["success_count"] = success_count
+    results["failure_count"] = len(apk_files) - success_count
+    
+    # Create result file
+    create_result_file(results, args.output)
+    
+    logger.info(f"Installation complete. Successfully installed {success_count} out of {len(apk_files)} APKs.")
+    
+    # Update workload state based on installation results
+    if success_count == len(apk_files):
+        update_workload_state(args.workload_name, WorkloadStateEnum.SUCCEEDED)
+        return 0
+    elif success_count > 0:
+        # Partial success - still mark as succeeded but log the partial status
+        logger.warning(f"Partial success: {success_count}/{len(apk_files)} APKs installed")
+        update_workload_state(args.workload_name, WorkloadStateEnum.SUCCEEDED)
+        return 0
     else:
-        # Wait for the signal file
-        start_time = time.time()
-        while True:
-            if os.path.exists(args.signal_file):
-                signal_content = wait_for_signal_file(args.signal_file)
-                break
-            
-            time.sleep(1)
-            if args.timeout > 0 and time.time() - start_time > args.timeout:
-                logger.warning(f"Timeout after {args.timeout} seconds")
-                return 1
-    
-    # Signal received, execute the task
-    logger.info(f"Executing task: {args.task}")
-    try:
-        exit_code = os.system(args.task)
-        logger.info(f"Task completed with exit code: {exit_code}")
-        return exit_code >> 8  # Extract the actual exit code
-    except Exception as e:
-        logger.error(f"Error executing task: {e}")
+        # Complete failure
+        update_workload_state(args.workload_name, WorkloadStateEnum.FAILED)
         return 1
 
 if __name__ == "__main__":
