@@ -1,0 +1,26 @@
+[package]
+name = "mqtt"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "aaos"
+path = "src/aaos.rs"
+
+[[bin]]
+name = "threadx"
+path = "src/threadx.rs"
+
+[dependencies]
+async-trait = { version = "0.1" }
+log = { version = "0.4.20" }
+env_logger = { version = "0.10.1" }
+tokio = { version = "1.44", default-features = false, features = [
+    "rt",
+    "rt-multi-thread",
+    "sync",
+    "time",
+    "macros",
+] }
+up-rust = { version = "0.7.0", default-features = false }
+up-transport-mqtt5 = { git = "https://github.com/eclipse-uprotocol/up-transport-mqtt5-rust" }

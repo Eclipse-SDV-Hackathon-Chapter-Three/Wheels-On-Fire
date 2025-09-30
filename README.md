@@ -1,123 +1,99 @@
+# Mission: Update Possible 🚗⚡
 
-# 1. Your Team at a Glance
+## The Challenge
+Modern vehicles aren’t just engines and wheels anymore — they’re powerful, software-driven platforms with dozens of interconnected ECUs, sensors, and services. But delivering secure, reliable Over-the-Air (OTA) updates at scale? That’s still a big challenge. Update Possible invites you to take on one of the hottest technical problems in the software-defined vehicle world: designing an open, end-to-end OTA update system using cutting-edge tools like [Eclipse Symphony](https://github.com/eclipse-symphony/symphony)
+, [Eclipse uProtocol](https://uprotocol.org/), and in-vehicle orchestrators such as [Eclipse Ankaios](https://eclipse-ankaios.github.io/ankaios/0.6/) and [Eclipse Muto](https://github.com/eclipse-muto).
 
-## Wheels on Fire / Tagline  
-*Brief catchy tagline or team name*
+## Your mission:
+* Build a working prototype that pushes updates from a cloud orchestrator to simulated vehicles.
+* Leverage open technologies to coordinate, deliver, and verify updates.
+* Tackle advanced scenarios like multi-site rollouts, rollback on failure, and first-time provisioning.
 
-Project: uUpdate
+This challenge is inspired by real-world regulations like UN R155 and R156, which demand secure, traceable, and auditable software update processes — especially for commercial and industrial fleets.
+We’ll provide starter templates, simulated agents, and reference uServices to get you moving fast. Whether you’re a cloud-native developer, embedded engineer, or systems architect, this is your chance to
+Work hands-on with open automotive tech
 
-*create a sheet of paper with your team name on the desk.*
+## OTA Updates for ECUs
 
-*Feel free to include a picture representing your team*
+![HPC Challenge](assets/hpc-challenge.png)
 
-## Team Members  
-| Name | GitHub Handle | Role(s) |
-|-------|---------------|---------|
-|José Chantre       |   github.com/josechantre            |   Arch and Quality Assurance      |
-| Bruno Campos|    github.com/campos1796    |   Team lead         |
-| Ivo Pinela      |     github.com/IvoPinela          |    Developer    |
-| Rui Teixeira      |     github.com/ruitails           |        Developer |
-| Vladyslav Borsuk      |       github.com/zukiprog         |        Developer |
+#### Challenge Summary
+This challenge tasks participants with building a secure, scalable Over-the-Air (OTA) update system for automotive ECUs using open-source Eclipse technologies. The goal is to simulate real-world scenarios where software updates must be delivered, coordinated, and verified across multiple vehicle components, in compliance with regulations like UN R155 and R156.
+
+**Key Technologies:**
+- **Eclipse Symphony:** Orchestrates the overall update process, integrating cloud and vehicle services for seamless management of software-defined vehicles.
+- **Eclipse uProtocol:** Provides secure, interoperable communication between vehicle ECUs and services, ensuring updates are delivered reliably and traceably.
+- **Eclipse Ankaios:** Acts as the in-vehicle orchestrator, managing workloads and containers on High Performance Computing (HPC) platforms, and executing update operations on target ECUs.
+
+**Challenge Outline:**
+- Design an end-to-end OTA update workflow from cloud to vehicle.
+- Implement multi-site rollouts, rollback on failure, and first-time provisioning.
+- Use simulated agents and reference uServices to demonstrate update delivery and verification.
+- Ensure the solution meets security, traceability, and auditability requirements for automotive fleets.
+
+This HPC variant focuses on updating ECUs in a simulated vehicle environment, leveraging the strengths of Symphony, uProtocol, and Ankaios to create a robust and open OTA update system.
+
+To start with this challenge go to [hpc_variant/README.md](./hpc_variant/README.md).
+
+## OTA Updates for Robots
+
+This robotics flavored "ROS" variant of the challenge invites you to use [Eclipse Symphony](https://github.com/eclipse-symphony/symphony)
+, [Eclipse uProtocol](https://uprotocol.org/), and in-vehicle orchestrator [Eclipse Muto](https://github.com/eclipse-muto).  
+
+![HPC Challenge](assets/ros-challenge.png)
+
+#### Challenge Summary
+This robotics (ROS) variant of the challenge focuses on orchestrating secure, scalable OTA updates for robotic platforms using open Eclipse technologies. The goal is to demonstrate how software updates, provisioning, and policy-driven workflows can be managed across fleets of robots, leveraging Symphony, uProtocol, and Muto.
+
+**Key Technologies:**
+- **Eclipse Symphony:** Acts as the central orchestrator, managing update workflows, device provisioning, and monitoring across distributed robotic fleets.
+- **Eclipse Muto:** Serves as the in-robot orchestrator, handling ros workspaces, ros nodes and configurations, update execution, and policy enforcement on robotic hardware.
+
+**Challenge Outline:**
+- Design an end-to-end OTA update workflow for robots, from cloud orchestrator to robotic hardware.
+- Implement policy-driven updates (e.g., only update when robot is idle or in a safe state).
+- Demonstrate multi-site distribution, partial updates, rollback, and device provisioning.
+- Use simulated agents and uServices to showcase update delivery, verification, and telemetry reporting.
+- Ensure the solution meets security, traceability, and auditability requirements for robotic fleets.
+- **uProtocol** This super extension of the challenge requires you to adaapt the uProtocol ıTargetProvider to work with muto agent to use uProtocol and uServices instead of the MQTT and the builtin SymphonyProvider. **Eclipse uProtocol:** Enables secure, interoperable communication between robotic components, orchestrators, and services, supporting reliable update delivery and telemetry.
+
+This ROS variant highlights the flexibility and power of Symphony, uProtocol, and Muto in managing complex update scenarios for robotics platforms, enabling safe, reliable, and auditable software delivery.
 
 
-## Challenge  
-*Which challenge have you decided to compete for?*
-Mission Update Possible - OTA Updates for ECUs
-## Core Idea  
-*What is your rough solution idea?*
+To start with this challenge go to [ros_variant/README.md](./ros_variant/README.md).
 
-1. First-Time Rollout
-   
-A script simulates in-factory provisioning, where the OEM flashes the Android app and ThreadX firmware via the Symphony cloud orchestrator.
-The vehicle is provisioned with:
-An Android app allowing future purchase of the cruise control feature(SDVShop) inside the IVI.
-An Android app representing the Cluster (base version), where the cruise control feature is not part of the Application (Can be later enabled by purchasing the Cruise Control Activation on SDVShop).
-A ThreadX ECU flashed with factory firmware excluding cruise control, which can later be activated via MQTT and uProtocol.
-
-2. Cruise Control Feature Purchase
-
-The user accesses the "SDV Shop" on the Android IVI to purchase the cruise control feature.
-The Android app requests an update via the Symphony cloud orchestrator.
-The update proceeds only if the vehicle is in a safe state (stopped, handbrake ON).
-Upon successful update:
-
-Android UI receives a new APK update on the cluster enabling cruise control
-ThreadX ECU receives firmware update allowing cruise control activation via uProtocol when user presses the button on the board.
-
-3. Rollback on Failure
-
-If the firmware update fails during feature activation, the system automatically rolls back.
-The Android UI reverts to the factory-provisioned version without cruise control.
-
-*Sketch something that helps understand e.g. mermaid chart*
 
 ---
+### Eclipse Projects Referenced
+- [Eclipse Symphony](https://github.com/eclipse-symphony/symphony)
+- [Eclipse uProtocol](https://uprotocol.org/)
+- [Eclipse Ankaios](https://eclipse-ankaios.github.io/ankaios/)
+- [Eclipse Muto](https://github.com/eclipse-muto)
 
-# 2. How Do You Work
+#### Challenge Levels & Use Cases
 
-## Development Process  
-*Brief overview of your development process.*
-1. Analyze the problem to be solved.
-2. Identify requirements for UN R155 (Cybersecurity) and R156 (Software Updates).
-3. Research the Eclipse SDV project and its components.
-4. Design a high-level architecture for the solution.
-5. Implement the proposed solution.
-6. Define and execute a validation plan.
- 
-### Planning & Tracking  
-*How do you plan and track progress?*
-**Day 1: Development Planning**
-1. Create List features to be implemented
-2. GitHub Projects for task management and tracking
-3. Clear definition of tasks with acceptance criteria
-4. Regular progress check-ins with all team members (every two hours)
+**1. End-to-End OTA Application & User Experience**
+- Build a demo application (web or mobile) that showcases the full OTA update workflow.
+- The app interacts with vehicles via Symphony REST APIs and uProtocol, visualizing update status, telemetry, and fleet management.
+- Example use case: A dashboard lets users trigger updates, monitor progress, and view real-time telemetry from simulated vehicles.
 
-**Day 2: Architecture Design**
-1. Define architecture and workflows ensuring alignment with UN R155 (Cybersecurity) and R156 (Software Updates).
-2. Create Acceptance criteria and Functional test  
-3. Destributed tasks between team members
+**2. Policy Workflow & User Containers**
+- Implement policy-driven workflows and user-defined containers.
+- Example challenge: Ensure updates only occur when the vehicle is parked and not running, using Symphony and uProtocol to enforce policies.
+- Use case: A policy engine checks vehicle state before allowing updates, and can be extended to other conditions (battery level, location, etc.).
 
-**Day 3: Implementation and Testing**
-1.  Environment Setup
-2.  Implemented the solution proposed
-3.  Execute Functional test
+**3. ECU Firmware Update & Hardware Integration**
+- Perform actual firmware updates on ECUs, requiring knowledge of hardware, RTOS, and uProtocol.
+- Example challenge: Use uProtocol to deliver and verify firmware updates on simulated or real ECUs (Thread-X, Raspberry Pi, Docker containers).
+- Use case: The update process interacts directly with the ECU, handles low-level operations, and reports status back to the orchestrator.
 
-### Quality Assurance  
-*How do you ensure quality (e.g., testing, documentation, code reviews)?*
+**Additional Use Cases:**
+- **Basic OTA Update Orchestration:** Use Symphony to push updates to multiple vehicles (simulated by uService instances), define packages, distribute, and monitor status. Add telemetry for update progress.
+- **Multi-Site OTA Distribution:** Central orchestrator distributes updates to regional installations (e.g., Berlin, Porto), which then push updates to local fleets. Demonstrates geographic deployment management.
+- **Partial Update & Rollback:** Implement partial OTA updates; if issues are detected, initiate rollback using uProtocol for granular control and status reporting.
+- **Device Provisioning & Initial Configuration:** Use Symphony and uServices to provision new vehicles, deploy initial configurations, and prepare them for future OTA updates.
 
-Our test strategy will have both functional tgest and unit test. 
-While the Agent configuration must be tested using unit tests the features witll be covered by functional test:
-  1. Features Test Planning
-     Define test cases for:
-        - First-time provisioning
-        - Feature purchase workflows
-        - Policy-based software updates
-        - Rollback mechanisms
-  2. Include edge cases and failure scenarios.
-      
-  2.1. Simulate OTA updates under safe-state conditions.
+### Getting Started
 
-  2.2. Force update failures to verify rollback workflows.
-   
-  3. Security Testing
-  3.1. Perform penetration testing on MQTT and agent endpoints.
-  3.2. Validate CSMS compliance (threat detection, logging, response).
-
-  4. Implementation of Acceptance Criteria for testing
-      - All workflows execute successfully under defined conditions.
-      - No critical failures during provisioning, updates, or rollback.
-      - Compliance with cybersecurity and update regulations.
-
-## Communication  
-*How does your team communicate?*
-- The team was divided into smaller groups to improve focus and collaboration.
-- Communication is direct and immediate.
-- Problems are discussed and resolved in real time to maintain development flow.
-- Daily syncs and informal check-ins ensured everyone stayed aligned
-
-## Decision Making  
-*How are decisions made in your team?*
-1. Decisions are made collaboratively through team-wide briefings.
-2. All members are encouraged to contribute ideas and feedback.
-3. Technical discussions are held to evaluate options and choose the best solution.
-4. The Hackathon coach is consulted before making key technical decisions.
+- Follow intructions [here](./hpc_variant/README.md) for the OTA Updates for ECUs challenge variant.
+- Follow instructions [here](./ros_variant/README.md) for the OTA Updates for robotics challenge variant.

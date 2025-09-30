@@ -1,0 +1,19 @@
+[package]
+name = "netx-sys"
+version = "0.2.1"
+authors = ["Jan Jongen"]
+edition = "2024"
+description = "Rust bindings for NetX"
+build = "build.rs"
+links = "netx"
+license-file = "LICENSE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+cmake = "0.1.54"
+bindgen = "0.71.1"
+
+[dependencies]
+
+
