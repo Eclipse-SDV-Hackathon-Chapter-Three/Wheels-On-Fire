@@ -1,9 +1,10 @@
 
 services:
   symphony-api:
-    image: ghcr.io/eclipse-symphony/symphony-api:0.48-proxy.41
+    image: ghcr.io/eclipse-symphony/symphony-api:0.48-proxy.40
     container_name: symphony-api
-    network_mode: host
+    ports:
+      - "8082:8082"
     environment:
       - USE_SERVICE_ACCOUNT_TOKENS=false
       - SYMPHONY_API_URL=http://localhost:8082/v1alpha2/
@@ -15,7 +16,8 @@ services:
   symphony-portal:
     image: ghcr.io/eclipse-symphony/symphony-portal:0.48-proxy.40
     container_name: symphony-portal
-    network_mode: host
+    ports:
+      - "3000:3000"
     environment:
       - SYMPHONY_API=http://symphony-api:8082/v1alpha2/
       - NEXTAUTH_SECRET=SymphonyKey
@@ -26,7 +28,9 @@ services:
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: mosquitto
-    network_mode: host
+    ports:
+      - "1883:1883"     # MQTT (TCP)
+      # - "9001:9001"   # (optional) WebSocket listener, enable in config first
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data

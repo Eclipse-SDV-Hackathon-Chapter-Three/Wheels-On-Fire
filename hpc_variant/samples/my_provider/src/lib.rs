@@ -34,7 +34,7 @@ impl ITargetProvider for MyProvider {
         step: DeploymentStep,
         _is_dry_run: bool,
     ) -> Result<HashMap<String, ComponentResultSpec>, String> {
-        println!("MY RUST PROVIDER: ------ apply()");
+        println!("WHEEEEELS");
         let mut result: HashMap<String, ComponentResultSpec> = HashMap::new();
         for component in step.components.iter() {
             if component.action == ComponentAction::Update {

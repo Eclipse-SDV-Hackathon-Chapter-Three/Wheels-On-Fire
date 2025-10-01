@@ -6,21 +6,28 @@
         "forceRedeploy": true,
         "components": [
             {
-                "name": "mock-component",
-                "type": "my_type",
-                "properties": {}
+                "name": "ecu",
+                "type": "my_ecu_type",
+                "properties": {
+                    "package": "my_ecu_package",
+                    "break": "0",
+                    "url": "localhost"
+                }
             }
         ],
         "topologies": [
             {
                 "bindings": [
                     {
-                        "role": "my_type",
-                        "provider": "providers.target.rust",
+                        "role": "my_ecu_type", 
+                        "provider": "providers.target.mqtt",
                         "config": {
-                            "name": "my-lib",
-                            "libFile": "/extensions/libmy_provider.so",
-                            "libHash": "eee8fd79ca4da51f492667f4ecc74f72f12cb24995c11a2edf537a72b1a20c46"
+                            "name": "proxy",
+                            "brokerAddress": "tcp://172.30.77.231:1883",
+                            "clientID": "symphony",
+                            "requestTopic": "coa-request",
+                            "responseTopic": "coa-response",
+                            "timeoutSeconds":  "30"
                         }
                     }
                 ]

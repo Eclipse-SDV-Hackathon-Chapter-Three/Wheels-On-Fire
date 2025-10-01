@@ -12,30 +12,6 @@ workloads:
     runtimeConfig: |
       image: localhost/update_trigger:0.1
       commandOptions: ["-p","5500:5500"]
-  apk_installer1:
-    runtime: podman
-    agent: agent_A
-    controlInterfaceAccess:
-      allowRules:
-        - type: StateRule
-          operation: ReadWrite
-          filterMask:
-            - "*"
-    runtimeConfig: |
-      image: localhost/apk-installer:01
-      commandOptions: ["--network=host", "--privileged"]
-      env:
-        - name: ADB_SERVER_HOST
-          value: "127.0.0.1"  # Use localhost since we're using host networking
-        - name: ADB_SERVER_PORT
-          value: "5037"
-        - name: ANDROID_ADB_SERVER_HOST  # Add these explicit variables
-          value: "127.0.0.1"
-        - name: ANDROID_ADB_SERVER_PORT
-          value: "5037"
-      volumes:
-        - /dev/bus/usb:/dev/bus/usb  # Add USB device access
-      command: ["--dir", "/app/provisioning", "--uninstall", "--workload-name", "apk_installer", "--wait", "60"]
   symphony:
     runtime: podman
     agent: "" 
@@ -55,7 +31,7 @@ workloads:
       - mountPoint: "/symphony-agent.json"
         data: "{{symphony_config}}"
     runtimeConfig: |
-      image: ghcr.io/eclipse-symphony/symphony-api:0.48-proxy.41
+      image: campos1796/test:latest
       commandOptions: ["-e","CONFIG=/symphony-agent.json", "--net=host"]
   Ankaios_Dashboard:
     runtime: podman
@@ -149,6 +125,14 @@ configs:
                       "libFile": "/extensions/libankaios.so",
                       "libHash": "23b67af66adc4830547528da66bb307c72bccef9db5de386b33cf3e1dc9ea483"
                     }
+                  },
+                  "my_ecu_type":{
+                    "type": "providers.target.rust",
+                    "config": {
+                      "name": "ankaios-type",
+                      "libFile": "/extensions/libankaios.so",
+                      "libHash": "23b67af66adc4830547528da66bb307c72bccef9db5de386b33cf3e1dc9ea483"
+                    }
                   }
                 }
               }
@@ -160,7 +144,7 @@ configs:
         {
           "type": "bindings.mqtt",
           "config": {
-            "brokerAddress": "tcp://host.containers.internal:1883",
+            "brokerAddress": "tcp://172.30.77.231:1883",
             "clientID": "my-agent",
             "requestTopic": "coa-request",
             "responseTopic": "coa-response"
