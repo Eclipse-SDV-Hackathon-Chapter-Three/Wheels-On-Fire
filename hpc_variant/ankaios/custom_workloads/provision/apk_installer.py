@@ -79,24 +79,43 @@ def check_adb_available():
 def wait_for_adb_server(timeout=30):
     """Wait for ADB server to be available."""
     start_time = time.time()
+    
+    # Log ADB server host and port for debugging
+    adb_host = os.environ.get('ADB_SERVER_HOST', '127.0.0.1')
+    adb_port = os.environ.get('ADB_SERVER_PORT', '5037')
+    logger.info(f"Connecting to ADB server at {adb_host}:{adb_port}")
+    
+    # Set ADB_SERVER_SOCKET environment variable
+    os.environ['ANDROID_ADB_SERVER_HOST'] = adb_host
+    os.environ['ANDROID_ADB_SERVER_PORT'] = adb_port
+    
     while time.time() - start_time < timeout:
         try:
+            # Try to connect to the ADB server
             result = subprocess.run(
-                ["adb", "start-server"], 
+                ["adb", "devices"], 
                 check=False, 
                 capture_output=True, 
-                text=True
+                text=True,
+                timeout=5  # Add timeout to prevent hanging
             )
-            if "daemon started successfully" in result.stdout or "already running" in result.stderr:
-                logger.info("ADB server is running")
+            
+            logger.info(f"ADB devices output: {result.stdout}")
+            logger.info(f"ADB devices error: {result.stderr}")
+            
+            if "List of devices" in result.stdout:
+                logger.info("Successfully connected to ADB server")
                 return True
+                
+        except subprocess.TimeoutExpired:
+            logger.warning("ADB command timed out")
         except Exception as e:
-            logger.warning(f"Error starting ADB server: {e}")
+            logger.warning(f"Error connecting to ADB server: {e}")
         
         logger.info("Waiting for ADB server...")
         time.sleep(2)
     
-    logger.error("Timed out waiting for ADB server")
+    logger.error(f"Timed out waiting for ADB server at {adb_host}:{adb_port}")
     return False
 
 def get_connected_devices():

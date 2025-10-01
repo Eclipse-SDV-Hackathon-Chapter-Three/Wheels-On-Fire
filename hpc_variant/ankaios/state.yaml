@@ -23,13 +23,18 @@ workloads:
             - "*"
     runtimeConfig: |
       image: localhost/apk-installer:01
-      commandOptions: ["--network=host"]
+      commandOptions: ["--network=host", "--privileged"]
       env:
         - name: ADB_SERVER_HOST
-          value: "host.docker.internal"  # For Docker Desktop on macOS/Windows
-        # For Linux, use the host's IP address
-        # - name: ADB_SERVER_HOST
-        #   value: "172.17.0.1"
+          value: "127.0.0.1"  # Use localhost since we're using host networking
+        - name: ADB_SERVER_PORT
+          value: "5037"
+        - name: ANDROID_ADB_SERVER_HOST  # Add these explicit variables
+          value: "127.0.0.1"
+        - name: ANDROID_ADB_SERVER_PORT
+          value: "5037"
+      volumes:
+        - /dev/bus/usb:/dev/bus/usb  # Add USB device access
       command: ["--dir", "/app/provisioning", "--uninstall", "--workload-name", "apk_installer", "--wait", "60"]
   symphony:
     runtime: podman
