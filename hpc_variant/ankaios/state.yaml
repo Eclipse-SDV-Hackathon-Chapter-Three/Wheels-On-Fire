@@ -10,7 +10,7 @@ workloads:
           filterMask:
             - "*"
     runtimeConfig: |
-      image: localhost/update_trigger:0.1
+      image: ghcr.io/eclipse-sdv-hackathon-chapter-three/mission-update/update_trigger:latest
       commandOptions: ["-p","5500:5500"]
   symphony:
     runtime: podman
@@ -96,7 +96,7 @@ configs:
                   "providers.secret": "mock-secret",
                   "providers.keylock": "mem-keylock",
                   "isTarget": "true",
-                  "targetNames": "ankaios-target",
+                  "targetNames": "my-target",
                   "poll.enabled": "true"              
                 },
                 "providers": {
@@ -130,8 +130,8 @@ configs:
                     "type": "providers.target.rust",
                     "config": {
                       "name": "ankaios-type",
-                      "libFile": "/extensions/libankaios.so",
-                      "libHash": "23b67af66adc4830547528da66bb307c72bccef9db5de386b33cf3e1dc9ea483"
+                      "libFile": "/extensions/libmy_provider.so",
+                      "libHash": "77afecc506cb65ba124fef12408d22442702d01acc6e49d975793c95aa84f892"
                     }
                   }
                 }
@@ -144,7 +144,7 @@ configs:
         {
           "type": "bindings.mqtt",
           "config": {
-            "brokerAddress": "tcp://172.30.77.231:1883",
+            "brokerAddress": "tcp://10.21.220.194:1883",
             "clientID": "my-agent",
             "requestTopic": "coa-request",
             "responseTopic": "coa-response"

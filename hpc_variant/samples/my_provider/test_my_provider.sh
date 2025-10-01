@@ -8,5 +8,5 @@ curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/
 
 # Prompt user to press Enter to continue after the target has been registered
 read -p "Target registered. Press Enter to remove..."
-
+echo $SYMPHONY_API_URL
 curl -s -X DELETE -H "Authorization: Bearer $TOKEN" "${SYMPHONY_API_URL}targets/registry/my-target"
