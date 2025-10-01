@@ -210,7 +210,6 @@ fn do_measurement(
     loop {
         let deg = i32::from(hts221.temperature_x8(&mut i2c).unwrap());
         let _ = snd.send(Event::TemperatureMeasurement(deg), WaitForever);
-        defmt::println!("Current temperature: {}", deg);
         let _ = sleep(Duration::from_secs(30));
     }
 }

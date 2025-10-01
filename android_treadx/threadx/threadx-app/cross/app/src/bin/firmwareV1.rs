@@ -209,7 +209,6 @@ fn do_measurement(
     loop {
         let deg = i32::from(hts221.temperature_x8(&mut i2c).unwrap());
         let _ = snd.send(Event::TemperatureMeasurement(deg), WaitForever);
-        defmt::println!("Current temperature: {}", deg);
         let _ = sleep(Duration::from_secs(30));
     }
 }
@@ -497,17 +496,21 @@ pub fn do_network(
             }
         }
 
-        // Create display text elements
-        let mut main_text_buf = heapless::String::<128>::new();
-        let _ = write!(main_text_buf, "Recv {}: \n{}\nSend {}: \n{}", msg_received_counter, last_msg_received, msg_sent_counter, last_msg_sent);
-        
-        // Define text elements with positions
-        let text_elements = [
-            (main_text_buf.as_str(), Point::new(0, 0)),
-            (FIRMWARE_VERSION, Point::new(0, 50)), // Bottom left corner (assuming 64px height display)
-        ];
-        
-        render_multiple_text(&text_elements, &mut *display_guard);
+        // Display logic - show empty until button pressed, then show centered text
+        if !last_msg_sent.is_empty() {
+            // Button was pressed, show centered message
+            let text_elements = [
+                (last_msg_sent.as_str(), Point::new(32, 16)), // Top center (assuming 128x64 display)
+                (FIRMWARE_VERSION, Point::new(0, 50)), // Bottom left corner
+            ];
+            render_multiple_text(&text_elements, &mut *display_guard);
+        } else {
+            // No button press, show only firmware version
+            let text_elements = [
+                (FIRMWARE_VERSION, Point::new(0, 50)), // Bottom left corner only
+            ];
+            render_multiple_text(&text_elements, &mut *display_guard);
+        }
         thread::sleep(Duration::from_millis(100)).unwrap();
     }
 }
