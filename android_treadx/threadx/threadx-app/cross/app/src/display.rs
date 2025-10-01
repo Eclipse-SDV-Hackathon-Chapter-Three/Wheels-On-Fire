@@ -1,5 +1,3 @@
-#![no_std]
-
 use embedded_graphics::mono_font::ascii::FONT_7X14;
 use embedded_graphics::{
     mono_font::MonoTextStyleBuilder,
@@ -10,7 +8,6 @@ use embedded_graphics::{
 use board::{DisplayType, I2CBus};
 use threadx_rs::mutex::Mutex;
 use threadx_rs::WaitOption::WaitForever;
-use core::fmt::Write;
 
 /// Display manager for handling text rendering on the OLED display.
 pub struct DisplayManager<'a> {
@@ -115,8 +112,15 @@ impl<'a> DisplayManager<'a> {
         if let Some(actual_display) = display {
             actual_display.clear_buffer();
             
+            let text_style = MonoTextStyleBuilder::new()
+                .font(&FONT_7X14)
+                .text_color(BinaryColor::On)
+                .build();
+            
             for (text, position) in text_elements {
-                self.render_text_at_position(text, *position, display);
+                Text::with_baseline(text, *position, text_style, Baseline::Top)
+                    .draw(actual_display)
+                    .unwrap();
             }
             
             actual_display.flush().unwrap();
