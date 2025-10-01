@@ -91,10 +91,7 @@ fun Cluster(
                 .padding(top = 37.dp, start = 620.dp, end = 338.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ClusterTopBar(
-                modifier = Modifier.width(topBarWidth),
-                cruiseControl = state.cruiseControl
-            )
+
         }
 
 //        // Central display (modes, map, or sensors)
@@ -139,18 +136,6 @@ fun Cluster(
 //                .padding(bottom = 256.dp, end = 609.dp),
 //            state = state
 //        )
-    }
-
-    // Control buttons
-    Box(Modifier.padding(top = 90.dp)) {
-        ControlButtons(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(top = 20.dp)
-                .width(500.dp),
-            onAction = onAction,
-            state = state
-        )
     }
 }
 

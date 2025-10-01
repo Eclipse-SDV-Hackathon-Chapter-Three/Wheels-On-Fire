@@ -105,17 +105,6 @@ fun ClusterSpeedDisplay(
                     .padding(bottom = 130.dp),
                 horizontalAlignment = Alignment.End
             ) {
-                Image(
-                    painter = if(cruiseControl) painterResource(id = R.drawable.ic_cruise_control_active) else painterResource(id = R.drawable.ic_cruise_control_default),
-                    contentDescription = "Cruise Control Icon",
-                    modifier = Modifier.size(60.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (cruiseControl) cruiseControlSpeed.toString() else "----",
-                    style = typography.rangeValueText, color = if(cruiseControl) Color.Green else Color.Gray
-                )
-
             }
         }
     }
