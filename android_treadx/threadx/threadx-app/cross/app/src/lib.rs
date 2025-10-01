@@ -14,6 +14,7 @@ use panic_probe as _;
 pub mod threadx;
 
 pub mod network;
+pub mod display;
 
 pub mod uprotocol_v1;
 pub mod utransport;

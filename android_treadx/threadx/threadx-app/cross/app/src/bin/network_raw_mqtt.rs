@@ -21,6 +21,7 @@ use netx_sys::ULONG;
 use static_cell::StaticCell;
 use threadx_app::minimqtransport::MiniMqBasedTransport;
 use threadx_app::network::ThreadxTcpWifiNetwork;
+use threadx_app::display::{DisplayManager, print_text, render_multiple_text};
 
 
 use threadx_rs::allocator::ThreadXAllocator;
@@ -46,6 +47,9 @@ use embedded_graphics::{
 };
 
 extern crate alloc;
+
+// Firmware version constant
+const FIRMWARE_VERSION: &str = "FW: WOF V1.0";
 
 pub type UINT = ::core::ffi::c_uint;
 #[derive(Copy, Clone)]
@@ -248,20 +252,6 @@ fn start_clock() -> impl Clock {
         )
         .unwrap();
     ThreadXSecondClock {}
-}
-
-fn print_text(text: &str, display: &mut Option<DisplayType<I2CBus>>) {
-    let text_style = MonoTextStyleBuilder::new()
-        .font(&FONT_7X14)
-        .text_color(BinaryColor::On)
-        .build();
-    if let Some(actual_display) = display {
-        actual_display.clear_buffer();
-        Text::with_baseline(text, Point::zero(), text_style, Baseline::Top)
-            .draw(actual_display)
-            .unwrap();
-        actual_display.flush().unwrap();
-    }   
 }
 
 /// Initializes the ThreadX TCP WiFi network with the given SSID and password.
@@ -500,16 +490,24 @@ pub fn do_network(
                     } else {
                         // Button pressed but cruise control not active or no vehicle data
                         last_msg_sent.clear();
-                        let _ = write!(last_msg_sent, "BTN");
+                        let _ = write!(last_msg_sent, "Brake pressed");
                     }
                 }
                 last_button_state = current_button_state;
             }
         }
 
-        let mut text_buf = heapless::String::<128>::new();
-        let _ = write!(text_buf, "Recv {}: \n{}\nSend {}: \n{}", msg_received_counter, last_msg_received, msg_sent_counter, last_msg_sent);
-        print_text(&text_buf, &mut *display_guard);
+        // Create display text elements
+        let mut main_text_buf = heapless::String::<128>::new();
+        let _ = write!(main_text_buf, "Recv {}: \n{}\nSend {}: \n{}", msg_received_counter, last_msg_received, msg_sent_counter, last_msg_sent);
+        
+        // Define text elements with positions
+        let text_elements = [
+            (main_text_buf.as_str(), Point::new(0, 0)),
+            (FIRMWARE_VERSION, Point::new(0, 50)), // Bottom left corner (assuming 64px height display)
+        ];
+        
+        render_multiple_text(&text_elements, &mut *display_guard);
         thread::sleep(Duration::from_millis(100)).unwrap();
     }
 }
