@@ -7,6 +7,15 @@ version = "0.1.0"
 [lib]
 harness = false
 
+# Binary configuration
+[[bin]]
+name = "firmwareV1"
+path = "src/bin/firmwareV1.rs"
+
+[[bin]]
+name = "firmwareV2"
+path = "src/bin/firmwareV2.rs"
+
 # needed for each integration test
 [[test]]
 name = "integration"
