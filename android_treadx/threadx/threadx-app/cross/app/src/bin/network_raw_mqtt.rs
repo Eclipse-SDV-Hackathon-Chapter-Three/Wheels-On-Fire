@@ -368,8 +368,8 @@ pub fn do_network(
     display: &Mutex<Option<DisplayType<I2CBus>>>,
     btn_a: Option<board::InputButton<'A', 4>>,
 ) -> ! {
-    let ssid = "__WIFI_SSID__";
-    let password = "__WIFI_PASSWORD__";
+    let ssid = "42 Porto | SEAME";
+    let password = "SEA:MEpass42.";
 
     let broker_ip = core::net::Ipv4Addr::new(5, 196, 78, 28);
 
