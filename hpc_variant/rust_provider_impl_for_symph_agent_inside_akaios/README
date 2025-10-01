@@ -1,0 +1,16 @@
+udo systemctl stop mosquitto
+docker run -it test:latest bash
+
+
+
+docker images
+ docker image rm <IMAGE ID>
+
+ docker build -f .
+
+
+
+docker tag campos1796/tets:latest campos1796/tets:1
+docker push  campos1796/tets:1
+docker rmi campos1796/tets:latest
+docker build -t campos1796/tets:latest .

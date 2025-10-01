@@ -21,6 +21,8 @@ workloads:
         value: Symphony
     configs:
       symphony_config: symphony_config
+    volumes:
+      - "/dev:/dev"
     controlInterfaceAccess:
       allowRules:
         - type: StateRule
@@ -31,8 +33,8 @@ workloads:
       - mountPoint: "/symphony-agent.json"
         data: "{{symphony_config}}"
     runtimeConfig: |
-      image: campos1796/test:latest
-      commandOptions: ["-e","CONFIG=/symphony-agent.json", "--net=host"]
+      image: campos1796/tets:1
+      commandOptions: ["-e","CONFIG=/symphony-agent.json", "--net=host", "--privileged"]
   Ankaios_Dashboard:
     runtime: podman
     agent: agent_A
@@ -131,7 +133,7 @@ configs:
                     "config": {
                       "name": "ankaios-type",
                       "libFile": "/extensions/libmy_provider.so",
-                      "libHash": "77afecc506cb65ba124fef12408d22442702d01acc6e49d975793c95aa84f892"
+                      "libHash": "0b12c51542735f580e6a71ab9e5ebe769836011818134310ebf24efc0802bc24"
                     }
                   }
                 }

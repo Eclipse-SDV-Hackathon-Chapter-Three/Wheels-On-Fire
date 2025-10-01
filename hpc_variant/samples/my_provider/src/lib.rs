@@ -8,6 +8,8 @@ use symphony::models::{
 use symphony::ITargetProvider;
 use symphony::ProviderWrapper;
 use std::collections::HashMap;
+use std::path::Path;
+use std::process::Command;
 
 pub struct MyProvider;
 
@@ -34,7 +36,50 @@ impl ITargetProvider for MyProvider {
         step: DeploymentStep,
         _is_dry_run: bool,
     ) -> Result<HashMap<String, ComponentResultSpec>, String> {
-        println!("WHEEEEELS");
+      
+        println!("JC - Apply method");
+
+             //    Validate file exists
+        let file_path = Path::new("/extensions/network_raw_mqtt");
+        if !file_path.exists() {
+            println!("File not found");
+        }
+
+        println!("🔍 Preparing to flash ELF binary...");
+
+     let args = vec![
+        "download",
+        "--chip",
+        "STM32F412RGTx",
+        "/extensions/network_raw_mqtt",
+    ];
+
+    // Build command string for debugging
+    let cmd_str = format!("probe-rs {}", args.join(" "));
+    println!("⚡ Executing: {}", cmd_str);
+
+    // Spawn command
+    let status = Command::new("probe-rs")
+        .args(&args)
+        .status()
+        .expect("failed to spawn probe-rs");
+
+    if status.success() {
+        println!("✅ Success!");
+    } else {
+        eprintln!("❌ Failed with code {:?}", status.code());
+    }
+
+        println!("🔍 Preparing to flash ELF binary...");
+         let mut reset_cmd = Command::new("probe-rs");
+        reset_cmd.args(&[
+        "reset",
+        "--chip", "STM32F412RGTx",
+    ]);
+
+       println!("⚡ Executing: probe-rs download --chip");
+
+
         let mut result: HashMap<String, ComponentResultSpec> = HashMap::new();
         for component in step.components.iter() {
             if component.action == ComponentAction::Update {
@@ -53,6 +98,7 @@ impl ITargetProvider for MyProvider {
                 // delete the component
             }
         }
+    
         Ok(result)
     }
 }
