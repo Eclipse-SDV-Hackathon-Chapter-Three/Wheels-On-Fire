@@ -10,6 +10,7 @@ use symphony::ProviderWrapper;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
+use serde_json::Value;
 
 pub struct MyProvider;
 
@@ -26,81 +27,137 @@ impl ITargetProvider for MyProvider {
         println!("MY RUST PROVIDER: ------ get_validation_rule()");
         Ok(ValidationRule::default())
     }
-    fn get(&self, _deployment: DeploymentSpec, _references: Vec<ComponentStep>) -> Result<Vec<ComponentSpec>, String> {
-        println!("MY RUST PROVIDER: ------ get()");
-        Ok(vec![])
-    }
+
+    fn get(
+    &self,
+    _deployment: DeploymentSpec,
+    _references: Vec<ComponentStep>,
+) -> Result<Vec<ComponentSpec>, String> {
+    println!("MY RUST PROVIDER: ------ get()");
+          // Build properties map
+        // Build properties map with serde_json::Value
+        let mut properties_ecu: HashMap<String, Value> = HashMap::new();
+        properties_ecu.insert("package".to_string(), Value::String("my_ecu_package".to_string()));
+        properties_ecu.insert("break".to_string(), Value::String("0".to_string()));
+        properties_ecu.insert("url".to_string(), Value::String("localhost".to_string()));
+        // Construct ComponentSpec
+        
+    let component_spec = ComponentSpec {
+        name: "ecu".to_string(),
+        component_type: Some("my_ecu_type".to_string()),
+        properties: Some(properties_ecu),
+
+        // Everything else should be None to match JSON
+        dependencies: None,
+        metadata: None,
+        parameters: None,
+        constraints: None,
+        routes: None,
+        sidecars: None,
+        skills: None,
+    };
+
+    Ok(vec![component_spec])
+}
+
     fn apply(
-        &self,
-        _deployment: DeploymentSpec,
-        step: DeploymentStep,
-        _is_dry_run: bool,
-    ) -> Result<HashMap<String, ComponentResultSpec>, String> {
-      
-        println!("JC - Apply method");
+    &self,
+    _deployment: DeploymentSpec,
+    step: DeploymentStep,
+    _is_dry_run: bool,
+) -> Result<HashMap<String, ComponentResultSpec>, String> {
+    println!("JC - Apply method");
 
-             //    Validate file exists
-        let file_path = Path::new("/extensions/network_raw_mqtt");
-        if !file_path.exists() {
-            println!("File not found");
-        }
+    let mut result: HashMap<String, ComponentResultSpec> = HashMap::new();
 
-        println!("🔍 Preparing to flash ELF binary...");
+    for component in step.components.iter() {
+        if component.action == ComponentAction::Update {
+            println!("Applying component: {:?}", component.component);
 
-     let args = vec![
-        "download",
-        "--chip",
-        "STM32F412RGTx",
-        "/extensions/network_raw_mqtt",
-    ];
+            // 🔹 Check the component type (so we can decide what to do)
+            match component.component.component_type.as_deref() {
+                Some("my_ecu_type") => {
+                    // 1️⃣ Flash ELF binary
+                    let elf_path = Path::new("/extensions/network_raw_mqtt");
+                    if !elf_path.exists() {
+                        println!("❌ ELF file not found: {:?}", elf_path);
+                    } else {
+                        println!("⚡ Flashing {:?}", elf_path);
+                        let status = Command::new("probe-rs")
+                            .args(&[
+                                "download",
+                                "--chip", "STM32F412RGTx",
+                                elf_path.to_str().unwrap(),
+                            ])
+                            .status()
+                            .map_err(|e| format!("Failed to run probe-rs: {:?}", e))?;
 
-    // Build command string for debugging
-    let cmd_str = format!("probe-rs {}", args.join(" "));
-    println!("⚡ Executing: {}", cmd_str);
+                        if status.success() {
+                            println!("✅ Flash success!");
+                        } else {
+                            eprintln!("❌ Flash failed with code {:?}", status.code());
+                        }
+                    }
 
-    // Spawn command
-    let status = Command::new("probe-rs")
-        .args(&args)
-        .status()
-        .expect("failed to spawn probe-rs");
+                    // 2️⃣ Install APK
+                    let apk_path = Path::new("/extensions/app-withoutfeature.apk");
+                    if apk_path.exists() {
+                        println!("🔍 Installing APK...");
+                        let status = Command::new("adb")
+                            .args(&["install", "-r", apk_path.to_str().unwrap()])
+                            .status()
+                            .map_err(|e| format!("Failed to run adb install: {:?}", e))?;
 
-    if status.success() {
-        println!("✅ Success!");
-    } else {
-        eprintln!("❌ Failed with code {:?}", status.code());
-    }
+                        if status.success() {
+                            println!("✅ APK installed!");
+                        } else {
+                            println!("❌ Failed to install APK");
+                        }
 
-        println!("🔍 Preparing to flash ELF binary...");
-         let mut reset_cmd = Command::new("probe-rs");
-        reset_cmd.args(&[
-        "reset",
-        "--chip", "STM32F412RGTx",
-    ]);
+                        // 3️⃣ Launch app
+                        let package_name = "com.example.digitalclusterapp";
+                        let main_activity = ".app.MainActivity";
+                        let status = Command::new("adb")
+                            .args(&[
+                                "shell", "am", "start",
+                                "-n", &format!("{}/{}", package_name, main_activity),
+                            ])
+                            .status()
+                            .map_err(|e| format!("Failed to run adb start: {:?}", e))?;
 
-       println!("⚡ Executing: probe-rs download --chip");
+                        if status.success() {
+                            println!("✅ App launched!");
+                        } else {
+                            println!("❌ Failed to launch app");
+                        }
+                    } else {
+                        println!("❌ APK file not found: {:?}", apk_path);
+                    }
+                }
 
-
-        let mut result: HashMap<String, ComponentResultSpec> = HashMap::new();
-        for component in step.components.iter() {
-            if component.action == ComponentAction::Update {
-                println!("Applying component: {:?}", component.component);
-                let component_result = ComponentResultSpec {
-                    status: State::OK,
-                    message: "Component applied successfully".to_string(),
-                };
-                result.insert(component.component.name.clone(), component_result);
-                // failure
-                // let component_result = ComponentResultSpec {
-                //    status: State::InternalError,
-                //    message: format!("Failed to apply workload: {:?}", e),
-                //};
-            } else if component.action == ComponentAction::Delete {
-                // delete the component
+                _ => {
+                    println!("⚠️ Unknown component type, skipping");
+                }
             }
+
+            // Report success (or you could report failure if flash/adb failed)
+            let component_result = ComponentResultSpec {
+                status: State::OK,
+                message: "Component applied successfully".to_string(),
+            };
+            result.insert(component.component.name.clone(), component_result);
+        } 
+        else if component.action == ComponentAction::Delete {
+            println!("Deleting component: {:?}", component.component.name);
+            // Here you could uninstall the APK, reset device, etc.
         }
-    
-        Ok(result)
     }
+
+    Ok(result)
+}
+    
+  
+
 }
 
 #[cfg(test)]

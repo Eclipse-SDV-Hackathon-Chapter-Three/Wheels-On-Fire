@@ -23,7 +23,7 @@
                         "provider": "providers.target.mqtt",
                         "config": {
                             "name": "proxy",
-                            "brokerAddress": "tcp://10.21.220.194:1883",
+                            "brokerAddress": "tcp://192.168.1.66:1883",
                             "clientID": "symphony",
                             "requestTopic": "coa-request",
                             "responseTopic": "coa-response",

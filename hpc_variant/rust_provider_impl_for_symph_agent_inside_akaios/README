@@ -14,3 +14,5 @@ docker tag campos1796/tets:latest campos1796/tets:1
 docker push  campos1796/tets:1
 docker rmi campos1796/tets:latest
 docker build -t campos1796/tets:latest .
+
+adb shell am start -n com.example.digitalclusterapp/.app.MainActivity
