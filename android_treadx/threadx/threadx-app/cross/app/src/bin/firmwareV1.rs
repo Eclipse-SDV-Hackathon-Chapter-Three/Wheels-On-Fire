@@ -367,8 +367,8 @@ pub fn do_network(
     display: &Mutex<Option<DisplayType<I2CBus>>>,
     btn_a: Option<board::InputButton<'A', 4>>,
 ) -> ! {
-    let ssid = "42 Porto | SEAME";
-    let password = "SEA:MEpass42.";
+    let ssid = "Eclipse SDV";
+    let password = "123..123";
 
     let broker_ip = core::net::Ipv4Addr::new(5, 196, 78, 28);
 
