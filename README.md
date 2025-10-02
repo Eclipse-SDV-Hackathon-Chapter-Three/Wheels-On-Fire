@@ -119,3 +119,42 @@ While the Agent configuration must be tested using unit tests the features witll
 2. All members are encouraged to contribute ideas and feedback.
 3. Technical discussions are held to evaluate options and choose the best solution.
 4. The Hackathon coach is consulted before making key technical decisions.
+
+## Getting Started
+
+1. Start the Android emulator on your host computer so you have a visual interface.
+
+2. Run the following commands:
+
+### Terminal 1
+```bash
+cd hpc_variant/ankaios
+ank apply state.yaml
+```
+
+### Terminal 2
+```bash
+cd symphony
+docker compose up
+```
+
+### Terminal 3
+```bash
+cd hpc_variant/samples/my_provider
+```
+
+## How to test
+
+Connect the board to your computer.
+
+Open the Android emulator on your device.
+
+Open your web browser at http://localhost:5500/ and press the Green Button
+
+In Terminal 2 just run 
+```bash
+source test_my_provider.sh
+```
+
+
+After these steps , the vehicle exits the factory with its "Wheels on Fire" :)
